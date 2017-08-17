@@ -51,9 +51,9 @@ uint16_t receive() {
 #ifndef SERIAL_DEBUG
     if (ask_driver.recv(buf, &buflen)) // Non-blocking
     { 
-      // Message with a good checksum received, dump it.
-      Serial.print("Got: ");
-      Serial.println((char *)buf);
+        // Message with a good checksum received, dump it.
+        Serial.print("Got: ");
+        Serial.println((char *)buf);
     }
 #else
     Serial.readBytes(buf, buflen);
@@ -68,15 +68,15 @@ void driveMotor(Motor motor, Direction direction, int speed=0) {
 
     // Set pins based on which motor to control
     if (motor == MOTOR_LEFT) {
-      speedPin = SPEED_L_PIN;
-      motorBridge1Pin = MOTOR_3A_PIN;
-      motorBridge2Pin = MOTOR_4A_PIN;
+        speedPin = SPEED_L_PIN;
+        motorBridge1Pin = MOTOR_3A_PIN;
+        motorBridge2Pin = MOTOR_4A_PIN;
     } else if (motor == MOTOR_RIGHT) {
-      speedPin = SPEED_R_PIN;
-      motorBridge1Pin = MOTOR_1A_PIN;
-      motorBridge2Pin = MOTOR_2A_PIN;
+        speedPin = SPEED_R_PIN;
+        motorBridge1Pin = MOTOR_1A_PIN;
+        motorBridge2Pin = MOTOR_2A_PIN;
     } else {
-      return;
+        return;
     }
 
     // define H-Bridge pins to set motor direction
@@ -92,19 +92,19 @@ void driveMotor(Motor motor, Direction direction, int speed=0) {
 }
 
 void controlCar(uint16_t controls) {
-    if (bitRead(controls, KEY_UP)) {
+    if (bitRead(controls, KEY_UP) || bitRead(controls, KEY_TRIANGLE)) {
         Serial.println("Moving forward");
         driveMotor(MOTOR_LEFT, MOTOR_FORWARD, 255);
         driveMotor(MOTOR_RIGHT, MOTOR_FORWARD, 255);
-    } else if (bitRead(controls, KEY_DOWN)) {
+    } else if (bitRead(controls, KEY_DOWN) || bitRead(controls, KEY_X)) {
         Serial.println("Moving backward");
         driveMotor(MOTOR_LEFT, MOTOR_BACKWARD, 255);
         driveMotor(MOTOR_RIGHT, MOTOR_BACKWARD, 255);        
-    } else if (bitRead(controls, KEY_LEFT)) {
+    } else if (bitRead(controls, KEY_LEFT) || bitRead(controls, KEY_SQUARE)) {
         Serial.println("Turning left");
         driveMotor(MOTOR_LEFT, MOTOR_BACKWARD, 255);
         driveMotor(MOTOR_RIGHT, MOTOR_FORWARD, 255);      
-    } else if (bitRead(controls, KEY_RIGHT)) {
+    } else if (bitRead(controls, KEY_RIGHT) || bitRead(controls, KEY_CIRCLE)) {
         Serial.println("Turning right");
         driveMotor(MOTOR_LEFT, MOTOR_FORWARD, 255);
         driveMotor(MOTOR_RIGHT, MOTOR_BACKWARD, 255);      
