@@ -22,12 +22,12 @@ byte askError = 0;
 uint8_t buttonState[2] = { 0x00, 0x00 };
 
 void getButtonState() {
-    // TODO: Complete getting buttons from controller
     //buttonState[0] = ps2xError + '0';
     //buttonState[1] = askError + '0';
     uint16_t buttons = ps2x.ButtonDataByte();
     buttonState[0] = (uint8_t) buttons;
     buttonState[1] = (uint8_t) (buttons >> 8);
+    Serial.println(buttons);
 }
 
 void transmit(uint8_t *data, int lenData) {
@@ -65,11 +65,11 @@ void setup() {
 }
 
 void loop() {
-    //if(!ps2xError && askError) {
+    if(!ps2xError && askError) {
         getButtonState();  // place button state in 2 byte buttonState
         transmit(buttonState, 2);  // transmit button states over RF
         delay(200);
-    //} else {
-    //    digitalWrite(LED_BUILTIN, HIGH);
-    //}
+    } else {
+        digitalWrite(LED_BUILTIN, HIGH);
+    }
 }
