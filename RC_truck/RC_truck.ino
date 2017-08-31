@@ -1,35 +1,26 @@
-#include <RH_ASK.h>
-#include<SPI.h>
+#include <RH_ASK.h>  // This library must be configured to use TIMER2
+#include <SPI.h>
+#include <Servo.h>
+
+/****************************** Global Constants ******************************/
 
 //#define SERIAL_DEBUG
+#define RUN_DEMO
 
-RH_ASK ask_driver;  // RC driver
+// Servo constants
+const int SERVO_R_PIN = 4;
+const int SERVO_L_PIN = 5;
+const int SERVO_C_PIN = 7;
 
-uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
-uint8_t buflen = sizeof(buf);
-
-uint16_t buttons = 0x00;
-
-// H-bridge and motor setup
-int SPEED_R_PIN  = 3;
-int MOTOR_1A_PIN = 6;
-int MOTOR_2A_PIN = 7;
-int SPEED_L_PIN  = 5;
-int MOTOR_3A_PIN = 8;
-int MOTOR_4A_PIN = 9;
-
-// constants
 enum Direction {
-    MOTOR_STOP,
-    MOTOR_FORWARD,
-    MOTOR_BACKWARD
+    STOP,
+    FORWARD,
+    BACKWARD,
+    CLOCKWISE,
+    COUNTERCLOCKWISE
 };
 
-enum Motor {
-    MOTOR_LEFT,
-    MOTOR_RIGHT
-};
-
+// RH_ASK constants
 enum Key {
     KEY_UP        = 4,
     KEY_DOWN      = 6,
@@ -47,6 +38,19 @@ enum Key {
     KEY_SELECT    = 0
 };
 
+/****************************** Global Variables ******************************/
+
+RH_ASK ask_driver;  // RC driver
+
+Servo servo_left;
+Servo servo_right;
+Servo servo_center;
+
+uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
+uint8_t buflen = sizeof(buf);
+
+uint16_t buttons = 0x00;
+
 uint16_t receive() {
 #ifndef SERIAL_DEBUG
     if (ask_driver.recv(buf, &buflen)) // Non-blocking
@@ -61,58 +65,72 @@ uint16_t receive() {
     return (uint16_t) buf[0] + buf[1] << 8;
 }
 
-void driveMotor(Motor motor, Direction direction, int speed=0) {
-    int motorBridge1 = LOW;
-    int motorBridge2 = LOW;
-    int motorBridge1Pin, motorBridge2Pin, speedPin;
+/****************************** Functions ******************************/
 
-    // Set pins based on which motor to control
-    if (motor == MOTOR_LEFT) {
-        speedPin = SPEED_L_PIN;
-        motorBridge1Pin = MOTOR_3A_PIN;
-        motorBridge2Pin = MOTOR_4A_PIN;
-    } else if (motor == MOTOR_RIGHT) {
-        speedPin = SPEED_R_PIN;
-        motorBridge1Pin = MOTOR_1A_PIN;
-        motorBridge2Pin = MOTOR_2A_PIN;
-    } else {
-        return;
+void driveWheels(Direction direction) {
+    switch (direction) {
+        case STOP:
+            servo_left.write(90);
+            servo_right.write(90);
+            break;
+        case FORWARD:
+            servo_left.write(0);
+            servo_right.write(180);
+            break;
+        case BACKWARD:
+            servo_left.write(180);
+            servo_right.write(0);
+            break;
+        case CLOCKWISE:
+            servo_left.write(0);
+            servo_right.write(0);
+            break;
+        case COUNTERCLOCKWISE:
+            servo_left.write(180);
+            servo_right.write(180);
+            break;
+        default:
+            break;
     }
+}
 
-    // define H-Bridge pins to set motor direction
-    if (direction == MOTOR_FORWARD) { motorBridge2 = HIGH; }
-    else if (direction == MOTOR_BACKWARD) { motorBridge1 = HIGH; }
-  
-    // put motor in forward motion
-    digitalWrite(motorBridge1Pin, motorBridge1); // set leg 1 of the H-bridge low
-    digitalWrite(motorBridge2Pin, motorBridge2); // set leg 2 of the H-bridge high
-
-    // control the speed 0-255
-    analogWrite(speedPin, speed);
+void runDemo(void) {
+    Serial.println("Forward");
+    driveWheels(FORWARD);
+    delay(1000);
+    Serial.println("Backward");
+    driveWheels(BACKWARD);
+    delay(1000);
+    Serial.println("CW");
+    driveWheels(CLOCKWISE);
+    delay(1000);
+    Serial.println("CCW");
+    driveWheels(COUNTERCLOCKWISE);
+    delay(1000);
+    Serial.println("Stop");
+    driveWheels(STOP);
+    delay(1000);
 }
 
 void controlCar(uint16_t controls) {
     if (bitRead(controls, KEY_UP) || bitRead(controls, KEY_TRIANGLE)) {
         Serial.println("Moving forward");
-        driveMotor(MOTOR_LEFT, MOTOR_FORWARD, 255);
-        driveMotor(MOTOR_RIGHT, MOTOR_FORWARD, 255);
+        driveWheels(FORWARD);
     } else if (bitRead(controls, KEY_DOWN) || bitRead(controls, KEY_X)) {
         Serial.println("Moving backward");
-        driveMotor(MOTOR_LEFT, MOTOR_BACKWARD, 255);
-        driveMotor(MOTOR_RIGHT, MOTOR_BACKWARD, 255);        
+        driveWheels(BACKWARD);       
     } else if (bitRead(controls, KEY_LEFT) || bitRead(controls, KEY_SQUARE)) {
         Serial.println("Turning left");
-        driveMotor(MOTOR_LEFT, MOTOR_BACKWARD, 255);
-        driveMotor(MOTOR_RIGHT, MOTOR_FORWARD, 255);      
+        driveWheels(COUNTERCLOCKWISE);     
     } else if (bitRead(controls, KEY_RIGHT) || bitRead(controls, KEY_CIRCLE)) {
         Serial.println("Turning right");
-        driveMotor(MOTOR_LEFT, MOTOR_FORWARD, 255);
-        driveMotor(MOTOR_RIGHT, MOTOR_BACKWARD, 255);      
+        driveWheels(CLOCKWISE);    
     } else {
-        driveMotor(MOTOR_LEFT, MOTOR_STOP);
-        driveMotor(MOTOR_RIGHT, MOTOR_STOP);      
+        driveWheels(STOP);  
     }
 }
+
+/****************************** Program Entry ******************************/
 
 void setup() {
     Serial.begin(57600);    // Debugging only
@@ -121,17 +139,19 @@ void setup() {
     if (!ask_driver.init())
          Serial.println("init failed");
 
-    // set digital i/o pins as outputs for motor and H-bridge: 
-    pinMode(SPEED_R_PIN, OUTPUT);
-    pinMode(MOTOR_1A_PIN, OUTPUT);
-    pinMode(MOTOR_2A_PIN, OUTPUT);
-    pinMode(SPEED_L_PIN, OUTPUT);
-    pinMode(MOTOR_3A_PIN, OUTPUT);
-    pinMode(MOTOR_4A_PIN, OUTPUT);
+    // Attach servo pins
+    servo_left.attach(SERVO_L_PIN);
+    servo_right.attach(SERVO_R_PIN);
+    servo_center.attach(SERVO_C_PIN);
+    driveWheels(STOP);
 }
 
 void loop() {
-    buttons = receive();
-    controlCar(buttons);
-    delay(100);
+    #ifndef RUN_DEMO
+        buttons = receive();
+        controlCar(buttons);
+        delay(100);
+    #else
+        runDemo();
+    #endif // RUN_DEMO
 }
