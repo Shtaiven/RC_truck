@@ -5,7 +5,7 @@
 /****************************** Global Constants ******************************/
 
 //#define SERIAL_DEBUG
-#define RUN_DEMO
+//#define RUN_DEMO
 
 // Servo constants
 const int SERVO_R_PIN = 4;
@@ -57,11 +57,13 @@ uint16_t buttons = 0x00;
 
 uint16_t receive() {
 #ifndef SERIAL_DEBUG
+    buf[0] = 0;
+    buf[1] = 0;
     if (ask_driver.recv(buf, &buflen)) // Non-blocking
     { 
         // Message with a good checksum received, dump it.
         Serial.print("Got: ");
-        Serial.println((char *)buf);
+        Serial.println((uint16_t) buf[0] + buf[1] << 8);
     }
 #else
     Serial.readBytes(buf, buflen);
