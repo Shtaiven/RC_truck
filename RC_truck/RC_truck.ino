@@ -17,7 +17,9 @@ enum Direction {
     FORWARD,
     BACKWARD,
     CLOCKWISE,
-    COUNTERCLOCKWISE
+    COUNTERCLOCKWISE,
+    UP,
+    DOWN
 };
 
 // RH_ASK constants
@@ -51,6 +53,8 @@ uint8_t buflen = sizeof(buf);
 
 uint16_t buttons = 0x00;
 
+/****************************** Functions ******************************/
+
 uint16_t receive() {
 #ifndef SERIAL_DEBUG
     if (ask_driver.recv(buf, &buflen)) // Non-blocking
@@ -64,8 +68,6 @@ uint16_t receive() {
 #endif  // SERIAL_DEBUG
     return (uint16_t) buf[0] + buf[1] << 8;
 }
-
-/****************************** Functions ******************************/
 
 void driveWheels(Direction direction) {
     switch (direction) {
@@ -90,7 +92,23 @@ void driveWheels(Direction direction) {
             servo_right.write(180);
             break;
         default:
+            return;
+    }
+}
+
+void driveBed(Direction direction) {
+    switch (direction) {
+        case UP:
+            servo_center.write(180);
             break;
+        case DOWN:
+            servo_center.write(0);
+            break;
+        case STOP:
+            servo_center.write(90);
+            break;
+        default:
+            return;
     }
 }
 
@@ -113,6 +131,12 @@ void runDemo(void) {
     Serial.println("CCW");
     driveWheels(COUNTERCLOCKWISE);
     delay(500);
+    driveBed(UP);
+    delay(3000);
+    driveBed(DOWN);
+    delay(3000);
+    driveBed(STOP);
+    delay(1000);
 
 }
 
@@ -129,8 +153,15 @@ void controlCar(uint16_t controls) {
     } else if (bitRead(controls, KEY_RIGHT) || bitRead(controls, KEY_CIRCLE)) {
         Serial.println("Turning right");
         driveWheels(CLOCKWISE);    
+    } else if (bitRead(controls, KEY_R1) || bitRead(controls, KEY_L1)) {
+        Serial.println("Raising bed");
+        driveBed(UP);
+    } else if (bitRead(controls, KEY_R2) || bitRead(controls, KEY_L2)) {
+        Serial.println("Lowerng bed");
+        driveBed(DOWN);
     } else {
-        driveWheels(STOP);  
+        driveWheels(STOP);
+        driveBed(STOP);  
     }
 }
 
