@@ -97,19 +97,23 @@ void driveWheels(Direction direction) {
 void runDemo(void) {
     Serial.println("Forward");
     driveWheels(FORWARD);
+    delay(5000);
+    Serial.println("Stop");
+    driveWheels(STOP);
     delay(1000);
     Serial.println("Backward");
     driveWheels(BACKWARD);
     delay(1000);
-    Serial.println("CW");
-    driveWheels(CLOCKWISE);
-    delay(1000);
-    Serial.println("CCW");
-    driveWheels(COUNTERCLOCKWISE);
-    delay(1000);
     Serial.println("Stop");
     driveWheels(STOP);
     delay(1000);
+    Serial.println("CW");
+    driveWheels(CLOCKWISE);
+    delay(500);
+    Serial.println("CCW");
+    driveWheels(COUNTERCLOCKWISE);
+    delay(500);
+
 }
 
 void controlCar(uint16_t controls) {
