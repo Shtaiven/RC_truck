@@ -67,9 +67,10 @@ uint16_t receive() {
         askTimeout = 0;
     } else {
         // Stop the truck
-        if (++askTimeout == 5) {
+        if (++askTimeout >= 5) {
             buf[0] = 0;
             buf[1] = 0;
+            askTimeout = 5;
         }
     }
 #else
