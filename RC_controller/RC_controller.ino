@@ -83,10 +83,22 @@ void sendKey(Key key, float seconds = 0.1) {
 }
 
 void runDemo() {
+    float turn90Deg = 1.0;
     if(askError) {
-        // 10 repetitions == 1 second
-        sendKey(KEY_UP, 3.5);
-        sendKey(KEY_RIGHT, 0.5);
+        sendKey(KEY_L2   , 2.5);
+        sendKey(KEY_UP   , 3.5);
+        sendKey(KEY_RIGHT, turn90Deg);
+        sendKey(KEY_UP   , 1.0);
+        sendKey(KEY_LEFT , turn90Deg);
+        sendKey(KEY_UP   , 3.5);
+        sendKey(KEY_LEFT , turn90Deg);
+        sendKey(KEY_UP   , 3.5);
+        sendKey(KEY_LEFT , turn90Deg);
+        sendKey(KEY_NONE , 2.0);
+        sendKey(KEY_DOWN , turn90Deg);
+        sendKey(KEY_NONE , 1.0);
+        sendKey(KEY_L1   , 2.5);
+        sendKey(KEY_L2   , 2.5);
     }
 }
 
