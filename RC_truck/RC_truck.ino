@@ -52,7 +52,8 @@ uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
 uint8_t buflen = sizeof(buf);
 
 uint16_t buttons = 0x00;
-uint16_t askTimeout = 0;
+uint16_t prevButtons = buttons;
+uint8_t askTimeout = 0;
 
 /****************************** Functions ******************************/
 
@@ -164,6 +165,7 @@ void controlCar(uint16_t controls) {
         Serial.println("Lowering bed");
         driveBed(DOWN);
     } else {
+        Serial.println("Stopping");
         driveWheels(STOP); 
     }
 }
@@ -190,7 +192,10 @@ void setup() {
 void loop() {
     #ifndef RUN_DEMO
         buttons = receive();
-        controlCar(buttons);
+        if (buttons != prevButtons) {
+            controlCar(buttons);
+        }
+        prevButtons = buttons;
         delay(100);
     #else
         runDemo();
