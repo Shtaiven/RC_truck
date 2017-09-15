@@ -52,18 +52,24 @@ uint8_t buf[RH_ASK_MAX_MESSAGE_LEN];
 uint8_t buflen = sizeof(buf);
 
 uint16_t buttons = 0x00;
+uint16_t askTimeout = 0;
 
 /****************************** Functions ******************************/
 
 uint16_t receive() {
 #ifndef SERIAL_DEBUG
-    buf[0] = 0;
-    buf[1] = 0;
     if (ask_driver.recv(buf, &buflen)) // Non-blocking
     { 
         // Message with a good checksum received, dump it.
         Serial.print("Got: ");
         Serial.println((uint16_t) buf[0] + buf[1] << 8);
+        askTimeout = 0;
+    } else {
+        // Stop the truck
+        if (++askTimeout == 5) {
+            buf[0] = 0;
+            buf[1] = 0;
+        }
     }
 #else
     Serial.readBytes(buf, buflen);
@@ -106,9 +112,6 @@ void driveBed(Direction direction) {
         case DOWN:
             servo_center.write(0);
             break;
-        case STOP:
-            servo_center.write(90);
-            break;
         default:
             return;
     }
@@ -133,13 +136,12 @@ void runDemo(void) {
     Serial.println("CCW");
     driveWheels(COUNTERCLOCKWISE);
     delay(500);
+    driveWheels(STOP);
+    delay(1000);
     driveBed(UP);
     delay(3000);
     driveBed(DOWN);
     delay(3000);
-    driveBed(STOP);
-    delay(1000);
-
 }
 
 void controlCar(uint16_t controls) {
@@ -159,11 +161,10 @@ void controlCar(uint16_t controls) {
         Serial.println("Raising bed");
         driveBed(UP);
     } else if (bitRead(controls, KEY_R2) || bitRead(controls, KEY_L2)) {
-        Serial.println("Lowerng bed");
+        Serial.println("Lowering bed");
         driveBed(DOWN);
     } else {
-        driveWheels(STOP);
-        driveBed(STOP);  
+        driveWheels(STOP); 
     }
 }
 
@@ -181,6 +182,9 @@ void setup() {
     servo_right.attach(SERVO_R_PIN);
     servo_center.attach(SERVO_C_PIN);
     driveWheels(STOP);
+    driveBed(DOWN);
+
+    Serial.println("init succeeded");
 }
 
 void loop() {
