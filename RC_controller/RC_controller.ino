@@ -4,13 +4,32 @@
 
 /****************************** Global Constants ******************************/
 
-#define RUN_DEMO
+#define RUN_DEMO  // Comment this out to send controller button signals
 
 // PSX controller pin assignments
 const int CLK_PIN = 9;
 const int CMD_PIN = 10;
 const int ATT_PIN = 11;
 const int DATA_PIN = 13;
+
+// Playstations controller bit positions
+enum Key {
+    KEY_UP        = 4,
+    KEY_DOWN      = 6,
+    KEY_LEFT      = 7,
+    KEY_RIGHT     = 5,
+    KEY_X         = 14,
+    KEY_SQUARE    = 15,
+    KEY_TRIANGLE  = 12,
+    KEY_CIRCLE    = 13,
+    KEY_L1        = 10,
+    KEY_L2        = 8,
+    KEY_R1        = 11,
+    KEY_R2        = 9,
+    KEY_START     = 3,
+    KEY_SELECT    = 0,
+    KEY_NONE      = 16
+};
 
 /****************************** Global Variables ******************************/
 
@@ -30,8 +49,6 @@ uint8_t buttonState[2] = { 0x00, 0x00 };
 /****************************** Functions ******************************/
 
 void getButtonState() {
-    //buttonState[0] = ps2xError + '0';
-    //buttonState[1] = askError + '0';
     uint16_t buttons = ps2x.ButtonDataByte();
     buttonState[0] = (uint8_t) buttons;
     buttonState[1] = (uint8_t) (buttons >> 8);
@@ -45,12 +62,31 @@ void transmit(uint8_t *data, int lenData) {
     digitalWrite(LED_BUILTIN, LOW);
 }
 
+void setButtonState(Key key) {
+    buttonState[0] = 0;
+    buttonState[1] = 0;
+    if (key > 7) {
+        bitSet(buttonState[0], key - 8);
+    } else {
+        bitSet(buttonState[1], key);
+    }
+}
+
+void sendKey(Key key, float seconds = 0.1) {
+    setButtonState(key);
+    seconds *= 5;
+    int tempSec = (int) seconds;
+    for (int i = 0; i < tempSec; ++i) {
+        transmit(buttonState, 2);  // transmit button states over RF
+        delay(100);
+    }
+}
+
 void runDemo() {
     if(askError) {
-        buttonState[0] = 0b00000000;
-        buttonState[1] = 0b00010000;
-        transmit(buttonState, 2);  // transmit button states over RF
-        delay(200);
+        // 10 repetitions == 1 second
+        sendKey(KEY_UP, 3.5);
+        sendKey(KEY_RIGHT, 0.5);
     }
 }
 
@@ -88,7 +124,7 @@ void loop() {
         if(!ps2xError && askError) {
             getButtonState();  // place button state in 2 byte buttonState
             transmit(buttonState, 2);  // transmit button states over RF
-            delay(200);
+            delay(100);
         } else {
             digitalWrite(LED_BUILTIN, HIGH);
         }
